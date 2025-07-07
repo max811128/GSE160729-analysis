@@ -32,6 +32,31 @@ HFD_E1<- subset(HFD_E1, subset = nFeature_RNA > 500 & nFeature_RNA < 4000 & nCou
 HFD_E2<- subset(HFD_E2, subset = nFeature_RNA > 500 & nFeature_RNA < 4000 & nCount_RNA < 20000 & percent.mt < 10)
 HFD_E3<- subset(HFD_E3, subset = nFeature_RNA > 500 & nFeature_RNA < 4000 & nCount_RNA < 20000 & percent.mt < 10)
 
+All.list <- list(LFD_E1=LFD_E1, LFD_E2=LFD_E2, LFD_E3=LFD_E3, HFD_E1=HFD_E1, HFD_E2=HFD_E2, HFD_E3=HFD_E3) 
+
+# normalize and identify variable features for each dataset independently
+All.list <- lapply(X = All.list, FUN = function(x) {
+  x <- NormalizeData(x)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)})
+
+features <- SelectIntegrationFeatures(object.list = All.list)
+All.anchors <- FindIntegrationAnchors(object.list = All.list, anchor.features = features)
+All.combined <- IntegrateData(anchorset = All.anchors)
+
+All.combined <- ScaleData(All.combined, verbose = FALSE)
+All.combined <- RunPCA(All.combined, npcs = 50, verbose = FALSE)
+All.combined <- RunUMAP(All.combined, reduction = "pca", dims = 1:30)
+All.combined <- FindNeighbors(All.combined, reduction = "pca", dims = 1:30)
+All.combined <- FindClusters(All.combined, resolution = 0.1)
+DimPlot(All.combined, reduction = "umap", label = TRUE)
+
+##以組別分開顏色畫Dimplot在同張圖
+DimPlot(All.combined, reduction = "umap", group.by = "orig.ident")
+##以組別分開畫Dimplot在不同張圖
+DimPlot(All.combined, reduction = "umap", split.by = "orig.ident")
+
+
+
 
 
 
